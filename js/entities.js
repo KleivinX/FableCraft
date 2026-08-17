@@ -46,17 +46,44 @@ const Entities = {
     const parts = {};
 
     if (type === 'zombie' || type === 'skeleton') {
-      const thin = type === 'skeleton' ? 0.13 : 0.18;
-      const skin = M(type === 'skeleton' ? 0xd8d8d0 : 0x4a8f3c);
-      const cloth = M(type === 'skeleton' ? 0xb8b8b0 : 0x2a6b8f);
-      const legMat = M(type === 'skeleton' ? 0xd0d0c8 : 0x3a3a6b);
+      const bone = type === 'skeleton';
+      const thin = bone ? 0.13 : 0.18;
+      const skin = M(bone ? 0xd8d8d0 : 0x4a8f3c);
+      const skinDark = M(bone ? 0xb9b9b0 : 0x3a7530);
+      const cloth = M(bone ? 0xb8b8b0 : 0x2a6b8f);
+      const clothDark = M(bone ? 0x9a9a94 : 0x1f5169);
+      const legMat = M(bone ? 0xd0d0c8 : 0x3a3a6b);
       const dark = M(0x111111);
+      const eyeMat = new THREE.MeshLambertMaterial({
+        color: bone ? 0x221a10 : 0x2a1a00,
+        emissive: bone ? 0x9a6b2a : 0xc23a2a, emissiveIntensity: 0.9,
+      });
+      mats.push(eyeMat);
 
       parts.head = this.box(0.5, 0.5, 0.5, skin, 0, 1.78, 0);
-      parts.head.add(this.box(0.09, 0.09, 0.04, dark, -0.12, 0.04, 0.26));
-      parts.head.add(this.box(0.09, 0.09, 0.04, dark, 0.12, 0.04, 0.26));
+      parts.head.add(this.box(0.11, 0.08, 0.04, eyeMat, -0.12, 0.04, 0.26));
+      parts.head.add(this.box(0.11, 0.08, 0.04, eyeMat, 0.12, 0.04, 0.26));
+      parts.head.add(this.box(0.34, 0.05, 0.03, dark, 0, 0.13, 0.26));       // brow
+      if (bone) {
+        parts.head.add(this.box(0.06, 0.05, 0.03, dark, 0, -0.05, 0.26));    // nasal cavity
+        for (const tx of [-0.09, -0.03, 0.03, 0.09]) {
+          parts.head.add(this.box(0.035, 0.05, 0.03, dark, tx, -0.16, 0.26)); // teeth
+        }
+      } else {
+        parts.head.add(this.box(0.22, 0.04, 0.03, dark, 0.02, -0.14, 0.26));  // slack jaw
+        parts.head.add(this.box(0.51, 0.1, 0.51, skinDark, 0, 0.21, 0));      // matted hair
+      }
       g.add(parts.head);
-      g.add(this.box(0.5, 0.72, 0.26, cloth, 0, 1.16, 0));
+
+      const torso = this.box(0.5, 0.72, 0.26, cloth, 0, 1.16, 0);
+      if (bone) {
+        for (const ry of [0.2, 0.06, -0.08]) torso.add(this.box(0.44, 0.05, 0.28, skin, 0, ry, 0)); // ribs
+        torso.add(this.box(0.09, 0.62, 0.29, skinDark, 0, 0, 0));                                    // spine
+      } else {
+        torso.add(this.box(0.52, 0.16, 0.28, clothDark, 0, -0.24, 0));   // ragged hem
+        torso.add(this.box(0.15, 0.28, 0.28, skinDark, 0.15, 0.08, 0));  // torn shirt
+      }
+      g.add(torso);
 
       const mkLimb = (x, y, len, mat, fwd) => {
         const pivot = new THREE.Group();
@@ -70,8 +97,14 @@ const Entities = {
       parts.armR = mkLimb(0.34, 1.45, 0.62, skin, true);
       parts.legL = mkLimb(-0.14, 0.8, 0.8, legMat, false);
       parts.legR = mkLimb(0.14, 0.8, 0.8, legMat, false);
-      if (type === 'skeleton') {
-        parts.armR.add(this.box(0.07, 0.7, 0.07, M(0x6b4a2b), 0, -0.55, 0.12));
+      // Hands and feet so the limbs do not end in flat stumps
+      parts.armL.add(this.box(thin + 0.04, 0.13, thin + 0.04, skinDark, 0, -0.62, 0));
+      parts.armR.add(this.box(thin + 0.04, 0.13, thin + 0.04, skinDark, 0, -0.62, 0));
+      parts.legL.add(this.box(thin + 0.04, 0.1, thin + 0.1, clothDark, 0, -0.8, 0.03));
+      parts.legR.add(this.box(thin + 0.04, 0.1, thin + 0.1, clothDark, 0, -0.8, 0.03));
+      if (bone) {
+        parts.armR.add(this.box(0.07, 0.7, 0.07, M(0x6b4a2b), 0, -0.55, 0.12)); // bow
+        g.add(this.box(0.46, 0.1, 0.24, skinDark, 0, 0.82, 0));                  // pelvis
       }
     } else if (type === 'warden' || type === 'leviathan') {
       const sea = type === 'leviathan';
@@ -116,8 +149,13 @@ const Entities = {
       const bodyMat = M(0x2a1f1a), headMat = M(0x1a1410);
       const eyeMat = new THREE.MeshLambertMaterial({ color: 0x330000, emissive: 0xcc1111 });
       mats.push(eyeMat);
-      g.add(this.box(0.85, 0.42, 1.05, bodyMat, 0, 0.5, -0.15));
+      const abdomen = this.box(0.85, 0.42, 1.05, bodyMat, 0, 0.5, -0.15);
+      abdomen.add(this.box(0.5, 0.2, 0.5, headMat, 0, 0.16, -0.3));      // humped back
+      abdomen.add(this.box(0.16, 0.1, 0.16, M(0x8a2f2f), 0, 0.2, -0.55)); // marking
+      g.add(abdomen);
       parts.head = this.box(0.45, 0.4, 0.45, headMat, 0, 0.48, 0.55);
+      parts.head.add(this.box(0.09, 0.09, 0.14, headMat, -0.16, -0.16, 0.2));  // mandibles
+      parts.head.add(this.box(0.09, 0.09, 0.14, headMat, 0.16, -0.16, 0.2));
       parts.head.add(this.box(0.07, 0.07, 0.04, eyeMat, -0.13, 0.06, 0.23));
       parts.head.add(this.box(0.07, 0.07, 0.04, eyeMat, 0.13, 0.06, 0.23));
       parts.head.add(this.box(0.05, 0.05, 0.04, eyeMat, -0.05, 0.12, 0.23));
@@ -289,6 +327,9 @@ const Entities = {
       const toPlayer = new THREE.Vector3().subVectors(Player.pos, e.pos);
       const dist = toPlayer.length();
       const distH = Math.hypot(toPlayer.x, toPlayer.z);
+      // Enemies are built from a dozen or so boxes each, so hiding the far ones
+      // keeps the draw-call count down without changing behaviour
+      e.mesh.visible = dist < 58;
 
       // Despawn rules (cave dwellers persist through the day)
       if (!e.arena && (dist > 70 || (!Game.isNight && e.natural && !e.cave && (e.dayTimer -= dt) <= 0))) {
@@ -483,6 +524,7 @@ const Entities = {
     d.sprite.position.copy(d.pos);
     this.scene.add(d.sprite);
     this.drops.push(d);
+    return d;
   },
 
   updateDrops(dt) {

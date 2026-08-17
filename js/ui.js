@@ -153,27 +153,39 @@ const UI = {
   },
 
   /* ---------- HUD ---------- */
+  // Only touch the DOM when a value actually changed. Writing every bar and label
+  // each frame was costing more than the rest of the HUD combined.
+  _hud: {},
+  set(id, prop, value) {
+    if (this._hud[id + prop] === value) return;
+    this._hud[id + prop] = value;
+    const el = this.el(id);
+    if (prop === 'w') el.style.width = value;
+    else el.textContent = value;
+  },
+
   updateHUD() {
     const P = Player;
-    this.el('hp-fill').style.width = (P.health / P.maxHealth * 100) + '%';
-    this.el('hp-text').textContent = `${Math.ceil(P.health)} / ${P.maxHealth}`;
-    this.el('st-fill').style.width = (P.stamina / P.maxStamina * 100) + '%';
-    this.el('mana-fill').style.width = (P.mana / P.maxMana * 100) + '%';
-    this.el('mana-text').textContent = `${Math.floor(P.mana)} / ${P.maxMana}`;
-    this.el('xp-fill').style.width = (P.xp / P.xpNeeded(P.level) * 100) + '%';
-    this.el('xp-text').textContent = `${Math.floor(P.xp)} / ${P.xpNeeded(P.level)} XP`;
-    this.el('level-label').textContent = 'LV ' + P.level;
-    this.el('coin-count').textContent = P.coins;
-    if (World.recipe) this.el('world-name').textContent = World.recipe.name;
+    const pct = (a, b) => (Math.round(a / b * 1000) / 10) + '%';
+    this.set('hp-fill', 'w', pct(P.health, P.maxHealth));
+    this.set('hp-text', 't', `${Math.ceil(P.health)} / ${P.maxHealth}`);
+    this.set('st-fill', 'w', pct(P.stamina, P.maxStamina));
+    this.set('mana-fill', 'w', pct(P.mana, P.maxMana));
+    this.set('mana-text', 't', `${Math.floor(P.mana)} / ${P.maxMana}`);
+    this.set('xp-fill', 'w', pct(P.xp, P.xpNeeded(P.level)));
+    this.set('xp-text', 't', `${Math.floor(P.xp)} / ${P.xpNeeded(P.level)} XP`);
+    this.set('level-label', 't', 'LV ' + P.level);
+    this.set('coin-count', 't', String(P.coins));
+    if (World.recipe) this.set('world-name', 't', World.recipe.name);
     const hours = (Game.dayTime * 24 + 8) % 24;
     const hh = Math.floor(hours), mm = Math.floor((hours - hh) * 60);
-    this.el('clock-display').textContent = `${Game.isNight ? '☾' : '☀'} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    this.set('clock-display', 't', `${Game.isNight ? '☾' : '☀'} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`);
 
     // Oxygen bar only while diving
     const oxyRow = this.el('oxy-row');
     if (P.oxygen < P.maxOxygen - 0.05) {
       oxyRow.classList.remove('hidden');
-      this.el('oxy-fill').style.width = (P.oxygen / P.maxOxygen * 100) + '%';
+      this.set('oxy-fill', 'w', (Math.round(P.oxygen / P.maxOxygen * 1000) / 10) + '%');
     } else {
       oxyRow.classList.add('hidden');
     }

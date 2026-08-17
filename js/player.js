@@ -21,6 +21,8 @@ const Player = {
   stepDist: 0,
   swimSoundT: 0,
   deathAnim: 0,
+  JUMP_COST: 11,     // a real cost, so jump-spamming actually runs you down
+  staminaHold: 0,    // pause on regeneration right after a jump
 
   init() {
     this.pos.copy(World.spawnPoint);
@@ -103,13 +105,15 @@ const Player = {
     if (ml > 1) { mx /= ml; mz /= ml; }
     const moving = ml > 0.01;
 
-    // Sprint & stamina
+    // Sprint & stamina. Regeneration pauses briefly after a jump, otherwise the
+    // cost is refunded before you land and jumping is effectively free.
     let sprinting = false;
+    if (this.staminaHold > 0) this.staminaHold -= dt;
     if (input.sprint && moving && !this.inWater && !this.sprintBlocked && this.stamina > 1) {
       sprinting = true;
       this.stamina = Math.max(0, this.stamina - 14 * dt);
       if (this.stamina <= 0.5) this.sprintBlocked = true;
-    } else {
+    } else if (this.staminaHold <= 0) {
       this.stamina = Math.min(this.maxStamina, this.stamina + 9 * dt);
       if (this.stamina > 12) this.sprintBlocked = false;
     }
@@ -128,7 +132,21 @@ const Player = {
       this.vel.y = Utils.lerp(this.vel.y, climb, Math.min(1, 12 * dt));
       this.fallPeakY = this.pos.y;
     } else if (this.inWater) {
-      this.vel.y = Utils.lerp(this.vel.y, input.jump ? 4 : -2.6, Math.min(1, 5 * dt));
+      // Standing on the bottom of shallow water: jump normally instead of being
+      // forced into the slow swim-rise, which used to feel like being stuck.
+      const shallow = this.onGround && !this.headUnder;
+      if (input.jump && shallow && this.stamina > this.JUMP_COST) {
+        this.jump();
+      } else {
+        this.vel.y = Utils.lerp(this.vel.y, input.jump ? 4 : -2.6, Math.min(1, 5 * dt));
+        // At the surface, pushing into a bank hauls you up onto it rather than
+        // bobbing against the edge forever.
+        if (input.jump && !this.headUnder && moving && this.ledgeAhead(mx, mz)) {
+          this.vel.y = 7.4;
+          this.vel.x += mx * 2.6;
+          this.vel.z += mz * 2.6;
+        }
+      }
       this.fallPeakY = this.pos.y;
       if (moving || input.jump) {
         this.swimSoundT -= dt;
@@ -137,11 +155,7 @@ const Player = {
     } else {
       this.vel.y -= 24 * dt;
       if (this.vel.y < -50) this.vel.y = -50;
-      if (input.jump && this.onGround && this.stamina > 3) {
-        this.vel.y = 8.4;
-        this.stamina -= 3;
-        AudioSys.play('jump');
-      }
+      if (input.jump && this.onGround && this.stamina > this.JUMP_COST) this.jump();
     }
 
     const wasGround = this.onGround;
@@ -168,6 +182,24 @@ const Player = {
     }
 
     if (this.pos.y < -10) this.teleport(World.spawnPoint);
+  },
+
+  jump() {
+    this.vel.y = 8.4;
+    this.stamina = Math.max(0, this.stamina - this.JUMP_COST);
+    this.staminaHold = 0.55;
+    if (this.stamina <= 0.5) this.sprintBlocked = true;
+    AudioSys.play('jump');
+  },
+
+  // Is there a block to climb onto in the direction of travel?
+  ledgeAhead(mx, mz) {
+    const len = Math.hypot(mx, mz);
+    if (len < 0.01) return false;
+    const dx = (mx / len) * 0.7, dz = (mz / len) * 0.7;
+    const x = this.pos.x + dx, z = this.pos.z + dz;
+    const step = Math.floor(this.pos.y + 0.6);
+    return World.isSolid(x, step, z) && !World.isSolid(x, step + 1, z) && !World.isSolid(x, step + 2, z);
   },
 
   teleport(v) {

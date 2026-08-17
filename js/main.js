@@ -29,6 +29,7 @@ const Game = {
     ['cycleSpell', 'KeyR', 'Next Spell'],
     ['quests', 'KeyJ', 'Quest Log'],
     ['thirdPerson', 'KeyV', 'Third-person View'],
+    ['drop', 'KeyQ', 'Drop Held Item'],
   ],
   binds: {},
   rebinding: null,
@@ -438,7 +439,32 @@ const Game = {
     if (e.code === b.cast && !UI.anyOpen()) Spells.tryCast();
     if (e.code === b.cycleSpell && !UI.anyOpen()) Spells.cycle();
     if (e.code === b.thirdPerson && !UI.anyOpen()) this.toggleThirdPerson();
+    if (e.code === b.drop && !UI.anyOpen()) this.dropHeld(e.shiftKey);
     if (e.code === 'Escape') UI.closeTopmost();
+  },
+
+  // Toss the held item out in front of you. Shift drops the whole stack.
+  dropHeld(wholeStack) {
+    if (Player.dead) return;
+    const slot = Inv.selectedSlot();
+    if (!slot) return;
+    const count = wholeStack ? slot.count : 1;
+    const id = slot.id;
+
+    const look = Player.lookDir();
+    const at = Player.eye().add(new THREE.Vector3(look.x * 0.6, -0.25, look.z * 0.6));
+    const d = Entities.spawnDrop(at, { item: id, count });
+    if (d) {
+      d.vel.set(look.x * 5.2, 2.6, look.z * 5.2);
+      d.grace = 1.2;   // long enough that it does not fly straight back into the pack
+    }
+
+    slot.count -= count;
+    if (slot.count <= 0) Inv.slots[Inv.sel] = null;
+    Inv.refresh();
+    this.refreshHeld();
+    AudioSys.play('click');
+    UI.message(`Dropped ${count}× ${Items.get(id).name}`, 1.2);
   },
 
   toggleThirdPerson() {

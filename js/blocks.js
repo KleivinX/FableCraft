@@ -175,10 +175,12 @@ const Blocks = {
         p.scatter(0, 16, ['#5fb945'], 0.10);
         p.grain(0.18);
       },
+      // Kept deliberately low-contrast and free of straight runs: banded rows read
+      // as hard lines once the tile repeats across a lake surface.
       [TILE.WATER]: (p) => {
-        p.speckle(['#3670d6', '#2f66c8', '#3f7ee6', '#2a5cb8']);
-        p.rows(3, 1, ['#5c95f0'], true); p.rows(9, 1, ['#5c95f0'], true);
-        p.scatter(0, 16, ['#8fc0ff'], 0.05);
+        p.speckle(['#3670d6', '#3369cd', '#3a75dc', '#2f63c6']);
+        p.scatter(0, 16, ['#4a83e4'], 0.10);
+        p.scatter(0, 16, ['#2b5cba'], 0.08);
       },
       [TILE.PLANK]: (p) => { p.planks(['#b8874f', '#a97c45', '#c29357'], '#7f5a34'); p.grain(0.12); p.bevel(); },
       [TILE.TABLE_TOP]: (p) => {

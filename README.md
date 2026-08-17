@@ -91,6 +91,7 @@ yourself run, swim and fight.
 | `F` | Cast the active spell |
 | `R` | Cycle spells |
 | `J` | Quest log |
+| `Q` | Drop the held item (hold `Shift` to drop the whole stack) |
 | `V` | Toggle third person view |
 | `1-9` / wheel | Hotbar slot |
 | `Esc` | Pause menu |
@@ -168,6 +169,19 @@ Issues and pull requests are welcome. New biomes, blocks, spells, dungeon types 
 are all natural places to extend the game. The codebase is plain JavaScript with one module
 per system (`js/world.js`, `js/spells.js`, `js/dungeons.js` and so on) and no build tooling,
 so you can edit a file and refresh the page.
+
+## ℹ️ About this project
+
+FableCraft is **free and open source**, and it exists as a demonstration of what the
+**Claude Fable 5** model could build. I do not make any money from it and I have no plans to.
+There is nothing to buy, no ads, no tracking and no accounts. Take it, learn from it, fork it.
+
+It is **inspired by Minecraft**, and that inspiration is obvious in the block grid, the mining
+and the crafting. It shares no code, no assets and no files with Minecraft. Every texture,
+sound, model, animation and line of code in this repository was made from scratch for this
+project, most of it generated procedurally at runtime. Minecraft is a trademark of Mojang
+Studios, who are not affiliated with this project and have not endorsed it. This is a personal
+tribute and a technical demo, nothing more.
 
 ## 📜 License
 
