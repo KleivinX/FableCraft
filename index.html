@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FableCraft</title>
+<link rel="preload" href="assets/fonts/vt323.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/pressstart2p.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" type="image/png" sizes="96x96" href="assets/img/icon-96.png">
+<link rel="apple-touch-icon" href="assets/img/icon-180.png">
+<link rel="preload" as="image" href="assets/img/logo-long.jpg">
+<meta name="theme-color" content="#0b0a14">
+<meta name="description" content="FableCraft — an original browser voxel survival RPG. Design your hero, mine, build, brew, cast spells and slay the dragon.">
+<meta property="og:title" content="FableCraft">
+<meta property="og:description" content="An original browser voxel survival RPG. Design your hero, mine, build, brew, cast spells and slay the dragon.">
+<meta property="og:image" content="assets/img/icon-512.jpg">
+<meta property="og:type" content="website">
+</head>
+<body>
+<div id="game-container"></div>
+
+<!-- ===================== HUD ===================== -->
+<div id="hud" class="hidden">
+  <div id="crosshair">+</div>
+  <div id="mine-progress-wrap" class="hidden"><div id="mine-progress"></div></div>
+
+  <div id="top-left">
+    <div class="bar-row"><span class="bar-label">HP</span>
+      <div class="bar hp-bar"><div id="hp-fill" class="bar-fill"></div><span id="hp-text" class="bar-text"></span></div>
+    </div>
+    <div class="bar-row"><span class="bar-label">ST</span>
+      <div class="bar st-bar"><div id="st-fill" class="bar-fill"></div></div>
+    </div>
+    <div class="bar-row"><span class="bar-label">MP</span>
+      <div class="bar mana-bar"><div id="mana-fill" class="bar-fill"></div><span id="mana-text" class="bar-text"></span></div>
+    </div>
+    <div class="bar-row hidden" id="oxy-row"><span class="bar-label">O₂</span>
+      <div class="bar oxy-bar"><div id="oxy-fill" class="bar-fill"></div></div>
+    </div>
+    <div class="bar-row"><span class="bar-label" id="level-label">LV 1</span>
+      <div class="bar xp-bar"><div id="xp-fill" class="bar-fill"></div><span id="xp-text" class="bar-text"></span></div>
+    </div>
+    <div id="buffs"></div>
+  </div>
+
+  <div id="top-right">
+    <div id="coin-display"><span id="coin-icon"></span><span id="coin-count">0</span></div>
+    <div id="clock-display"></div>
+    <div id="world-name"></div>
+    <div id="dungeon-locator" class="hidden"></div>
+  </div>
+
+  <div id="boss-bar-wrap" class="hidden">
+    <div id="boss-name">DRAGON</div>
+    <div class="bar boss-bar"><div id="boss-fill" class="bar-fill"></div></div>
+  </div>
+
+  <div id="wave-info" class="hidden"></div>
+  <div id="banner" class="hidden"><div id="banner-main"></div><div id="banner-sub"></div></div>
+  <div id="message" class="hidden"></div>
+
+  <div id="spell-bar" class="hidden">
+    <div id="spell-icon-wrap"><img id="spell-icon" alt=""><div id="spell-cd"></div></div>
+    <div id="spell-info">
+      <div id="spell-name"></div>
+      <div id="spell-cost"></div>
+      <div id="spell-hint"></div>
+    </div>
+  </div>
+
+  <div id="subtitles"></div>
+  <div id="hotbar"></div>
+  <div id="dmg-layer"></div>
+  <div id="vignette"></div>
+  <div id="underwater"></div>
+  <div id="darken"></div>
+</div>
+
+<!-- ===================== INVENTORY ===================== -->
+<div id="inventory-screen" class="overlay hidden">
+  <div class="panel inv-panel">
+    <h2>Inventory</h2>
+    <div class="inv-columns">
+      <div class="inv-equip">
+        <h3>Equipment</h3>
+        <div id="equip-grid"></div>
+        <div id="equip-stats"></div>
+      </div>
+      <div class="inv-left">
+        <div id="inv-grid" class="slot-grid"></div>
+        <div id="inv-hotbar-row" class="slot-grid"></div>
+        <p class="hint">Right-click: equip gear · drink potions · read books. Shift-click: quick-move.</p>
+      </div>
+      <div class="inv-right">
+        <h3>Field Crafting</h3>
+        <div id="craft-list"></div>
+        <p class="hint">Use a placed Crafting Table for weapons, armor &amp; more.</p>
+      </div>
+    </div>
+    <button id="inv-close" class="btn">Close (E)</button>
+  </div>
+</div>
+<div id="carried-item" class="hidden"></div>
+
+<!-- ===================== CRAFTING TABLE ===================== -->
+<div id="craft-screen" class="overlay hidden">
+  <div class="panel craft-panel">
+    <h2>Crafting Table</h2>
+    <div id="craft-tabs"></div>
+    <div id="craft-table-list"></div>
+    <button id="craftscreen-close" class="btn">Close</button>
+  </div>
+</div>
+
+<!-- ===================== BREWING ===================== -->
+<div id="brew-screen" class="overlay hidden">
+  <div class="panel craft-panel">
+    <h2>Brewing Station</h2>
+    <div id="brew-list"></div>
+    <button id="brew-close" class="btn">Close</button>
+  </div>
+</div>
+
+<!-- ===================== CHEST ===================== -->
+<div id="chest-screen" class="overlay hidden">
+  <div class="panel">
+    <h2 id="chest-title">Chest</h2>
+    <div id="chest-grid" class="slot-grid"></div>
+    <p class="hint">Click items to take them. Shift-click in your inventory (E) to deposit.</p>
+    <button id="chest-take-all" class="btn">Take All</button>
+    <button id="chest-close" class="btn">Close</button>
+  </div>
+</div>
+
+<!-- ===================== NPC DIALOGUE ===================== -->
+<div id="npc-screen" class="overlay hidden">
+  <div class="panel npc-panel">
+    <h2 id="npc-name"></h2>
+    <p id="npc-text"></p>
+    <div id="npc-content"></div>
+    <div id="npc-buttons"></div>
+  </div>
+</div>
+
+<!-- ===================== CHARACTER DESIGNER ===================== -->
+<div id="character-screen" class="overlay hidden">
+  <div class="panel char-panel">
+    <h2>Character Designer</h2>
+    <div class="char-columns">
+      <div class="char-preview-wrap">
+        <canvas id="char-preview" width="280" height="340"></canvas>
+        <p class="hint">Drag to spin</p>
+      </div>
+      <div id="char-controls"></div>
+    </div>
+    <div class="char-buttons">
+      <button class="btn" id="char-random">Surprise Me</button>
+      <button class="btn" id="char-reset">Reset</button>
+      <button class="btn" id="char-done">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== QUESTS ===================== -->
+<div id="quest-screen" class="overlay hidden">
+  <div class="panel quest-panel">
+    <h2>Quest Log</h2>
+    <div id="quest-list"></div>
+    <button id="quest-close" class="btn">Close (J)</button>
+  </div>
+</div>
+
+<!-- ===================== PAUSE ===================== -->
+<div id="pause-screen" class="overlay hidden">
+  <div class="panel">
+    <h1 class="title-small">FableCraft</h1>
+    <div id="pause-main">
+      <button class="btn big" id="btn-resume">Resume</button>
+      <button class="btn big" id="btn-character">Character</button>
+      <button class="btn big" id="btn-settings">Settings</button>
+      <button class="btn big" id="btn-save">Save Game</button>
+      <button class="btn big danger" id="btn-restart">Restart World</button>
+      <div id="pause-stats"></div>
+    </div>
+    <div id="pause-settings" class="hidden">
+      <div class="setting-row"><label>Master Volume</label><input type="range" id="set-master" min="0" max="100" value="80"></div>
+      <div class="setting-row"><label>Music Volume</label><input type="range" id="set-music" min="0" max="100" value="55"></div>
+      <div class="setting-row"><label>Sound Effects</label><input type="range" id="set-sfx" min="0" max="100" value="90"></div>
+      <div class="setting-row"><label>Mouse Sensitivity</label><input type="range" id="set-sens" min="20" max="300" value="100"></div>
+      <div class="setting-row"><label>Render Distance</label><input type="range" id="set-dist" min="3" max="7" value="4"><span id="dist-val">4</span></div>
+      <div class="setting-row"><label>Graphics Quality</label>
+        <select id="set-quality">
+          <option value="0">Low</option>
+          <option value="1">Medium</option>
+          <option value="2" selected>High</option>
+        </select>
+      </div>
+      <div class="setting-row"><label>UI Scale</label><input type="range" id="set-uiscale" min="70" max="140" value="100"><span id="uiscale-val">100%</span></div>
+      <div class="setting-row"><label>Colorblind Mode</label><input type="checkbox" id="set-colorblind"></div>
+      <div class="setting-row"><label>Subtitles</label><input type="checkbox" id="set-subtitles" checked></div>
+      <div class="setting-row">
+        <button class="btn" id="btn-fullscreen">Toggle Fullscreen</button>
+        <button class="btn" id="btn-rebind">Rebind Keys</button>
+      </div>
+      <button class="btn big" id="btn-settings-back">Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== KEY REBINDING ===================== -->
+<div id="rebind-screen" class="overlay hidden">
+  <div class="panel">
+    <h2>Key Bindings</h2>
+    <div id="rebind-list"></div>
+    <p class="hint">Click an action, then press the new key. ESC cancels.</p>
+    <button id="rebind-close" class="btn big">Done</button>
+  </div>
+</div>
+
+<!-- ===================== DEATH ===================== -->
+<div id="death-screen" class="overlay hidden">
+  <div class="panel death-panel">
+    <h1>You Died</h1>
+    <p id="death-cause"></p>
+    <button class="btn big" id="btn-respawn">Respawn</button>
+  </div>
+</div>
+
+<!-- ===================== VICTORY ===================== -->
+<div id="victory-screen" class="overlay hidden">
+  <div class="panel victory-panel">
+    <h1 class="rainbow">FABLECRAFT CHAMPION</h1>
+    <p class="victory-sub">The Dragon has fallen. The realm is yours.</p>
+    <table id="victory-stats"></table>
+    <button class="btn big" id="btn-victory-close">Claim Your Glory</button>
+  </div>
+</div>
+
+<!-- ===================== INTRO ===================== -->
+<div id="intro-screen" class="overlay">
+  <div id="intro-dirt"></div>
+  <div id="intro-vignette"></div>
+  <div class="intro-inner">
+    <img id="intro-logo" src="assets/img/logo-long.jpg" alt="FableCraft">
+    <p class="tagline">Dig. Build. Brew. Cast. Slay the Dragon.</p>
+
+    <div id="loader">
+      <div id="loader-status">Loading&hellip;</div>
+      <div id="loader-bar"><div id="loader-fill"></div></div>
+      <div id="loader-tip"></div>
+    </div>
+
+    <div id="intro-buttons" class="hidden">
+      <button class="btn big" id="btn-continue">Continue World</button>
+      <button class="btn big" id="btn-new">New World</button>
+      <button class="btn big" id="btn-intro-character">Customize Character</button>
+    </div>
+    <div class="controls-help">
+      <b>WASD</b> Move &nbsp; <b>SPACE</b> Jump &nbsp; <b>SHIFT</b> Sprint &nbsp; <b>MOUSE</b> Look<br>
+      <b>LEFT CLICK</b> Mine / Attack &nbsp; <b>RIGHT CLICK</b> Place / Use / Talk<br>
+      <b>E</b> Inventory &nbsp; <b>F</b> Cast Spell &nbsp; <b>R</b> Cycle Spells &nbsp; <b>J</b> Quests<br>
+      <b>V</b> Third-person view &nbsp; <b>ESC</b> Pause<br><br>
+      Talk to the villagers at spawn, then find the <span class="purple">WAVE ARENA</span> portal.
+    </div>
+  </div>
+</div>
+
+<div id="fade"></div>
+
+<script src="js/vendor/three.min.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/blocks.js"></script>
+<script src="js/items.js"></script>
+<script src="js/world.js"></script>
+<script src="js/structures.js"></script>
+<script src="js/dungeons.js"></script>
+<script src="js/player.js"></script>
+<script src="js/character.js"></script>
+<script src="js/equipment.js"></script>
+<script src="js/spells.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/crafting.js"></script>
+<script src="js/brewing.js"></script>
+<script src="js/chests.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/npc.js"></script>
+<script src="js/dragon.js"></script>
+<script src="js/dungeonbosses.js"></script>
+<script src="js/arena.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/quests.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/save.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
